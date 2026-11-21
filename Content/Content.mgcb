@@ -26,3 +26,11 @@
 /processorParam:Version=3.8.6.1
 /build:apple sprite.png
 
+#begin DefaultFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/processorParam:Version=3.8.6.1
+/build:DefaultFont.spritefont
+
