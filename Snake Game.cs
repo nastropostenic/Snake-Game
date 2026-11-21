@@ -46,8 +46,8 @@ namespace Snake_Game
         {
             return Convert.ToInt32(
                 Math.Sqrt(
-                    Math.Pow(point2._X - point1._X, 2) 
-                    + Math.Pow(point2._Y - point1._Y, 2)
+                Math.Pow(point2._X - point1._X, 2) 
+                + Math.Pow(point2._Y - point1._Y, 2)
             ));
         }
 
@@ -244,20 +244,20 @@ namespace Snake_Game
             
             foreach (var snake in SnakeParts)
                 _spriteBatch.Draw(_pixel, 
-                    new Rectangle(snake._Position._X, snake._Position._Y, snake._SizeX, snake._SizeY), 
-                        Color.Green
-             );
+                new Rectangle(snake._Position._X, snake._Position._Y, snake._SizeX, snake._SizeY), 
+                Color.Green
+                );
 
             _spriteBatch.Draw(_appleSprite, 
                 new Rectangle(AppleObject._Position._X, AppleObject._Position._Y, AppleObject._SizeX, AppleObject._SizeY), 
-                    Color.Red
+                Color.Red
              );
 
             _spriteBatch.DrawString(
                 _font,
-                    $"Score: {PlayerStatistics._Score}",
-                        new Vector2(0, 0),
-                            Color.Red
+                $"Score: {PlayerStatistics._Score}",
+                new Vector2(0, 0),
+                Color.Red
             );
 
             _spriteBatch.End();
