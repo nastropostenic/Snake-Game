@@ -1,2 +1,2 @@
-﻿using var game = new Snake_Game.Game1();
+﻿using var game = new Snake_Game.Snake_Game();
 game.Run();

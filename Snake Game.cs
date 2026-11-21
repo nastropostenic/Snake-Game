@@ -9,7 +9,7 @@ using System.Threading.Tasks.Sources;
 
 namespace Snake_Game
 {
-    public class Game1 : Game
+    public class Snake_Game : Game
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -117,7 +117,7 @@ namespace Snake_Game
 
         // game logic
 
-        public Game1()
+        public Snake_Game()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
