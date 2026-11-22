@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
 namespace Snake_Game
@@ -24,11 +25,18 @@ namespace Snake_Game
         private const int FrameDelay = 22;
         private const int LoopThroughAvailablePositions = 100;
 
+        public enum GameStates
+        {
+            Menu,
+            Started,
+            Ended
+        }
+
         public enum PixelDistances
         {
             MinimumForAppleToSpawn = 700,
             FromSnakeToAppleForCollection = 100,
-            DistanceForHeadToCollideWithBody = 100
+            DistanceForHeadToCollideWithBody = 50
         }
 
         public enum Sizes
@@ -91,23 +99,6 @@ namespace Snake_Game
 
         public static Coordinate CentrePoint = new Coordinate(WindowWidth / 2, WindowHeight / 2);
 
-        // player stats
-        public class PlayerStatisticsTemplate
-        {
-            public int _Score { get; private set; }
-            public PlayerStatisticsTemplate(int Score)
-            {
-                _Score = Score;
-            }
-
-            public void IncreaseScore()
-            {
-                _Score++;
-            }
-        }
-
-        public static PlayerStatisticsTemplate PlayerStatistics = new PlayerStatisticsTemplate(0);
-
         // objects
 
         public class GameObject
@@ -141,9 +132,64 @@ namespace Snake_Game
             }
         }
 
-        private SnakeHead SnakeHeadObject = new SnakeHead();
-        private Apple AppleObject = new Apple((int)Sizes.AppleSizeX, (int)Sizes.AppleSizeY);
-        private List<GameObject> SnakeParts = new List<GameObject>();
+        // player stats
+        public class GameStatisticsTemplate
+        {
+            public SnakeHead SnakeHeadObject { get; private set; }
+            public Apple AppleObject { get; private set; }
+            public List<GameObject> SnakeParts = new List<GameObject>();
+
+            public GameStates GameState { get; private set; }
+            public int HighScore { get; private set; } = 0;
+            public int _Score { get; private set; }
+
+            public GameStatisticsTemplate(int Score)
+            {
+                _Score = Score;
+            }
+
+            public void ResetScore()
+            {
+                _Score = 0;
+            }
+            public void IncreaseScore()
+            {
+                _Score++;
+            }
+
+            public void StartGame()
+            {
+                GameStatistics.SnakeHeadObject = new SnakeHead();
+                AppleObject = new Apple((int)Sizes.AppleSizeX, (int)Sizes.AppleSizeY);
+                GameStatistics.SnakeParts.Add(GameStatistics.SnakeHeadObject);
+                SetRandomPosition(GameStatistics.AppleObject);
+
+                GameState = GameStates.Started;
+            }
+            public async Task GameOver()
+            {
+                GameState = GameStates.Ended;
+
+                await Task.Delay(1000);
+
+                HighScore = (HighScore < _Score) ? _Score : HighScore;
+                ResetScore();
+
+                GameStatistics.SnakeHeadObject = null;
+                AppleObject = null;
+                GameStatistics.SnakeParts.Clear();
+
+                await Task.Delay(5000);
+
+                StartGame();
+            }
+            public void Menu()
+            {
+                GameState = GameStates.Menu;
+            }
+        }
+
+        public static GameStatisticsTemplate GameStatistics = new GameStatisticsTemplate(0);
 
         // game logic
 
@@ -152,7 +198,6 @@ namespace Snake_Game
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-            
         }
 
         protected override void Initialize()
@@ -161,9 +206,7 @@ namespace Snake_Game
             _graphics.PreferredBackBufferHeight = WindowHeight;
             _graphics.ApplyChanges();
 
-            SnakeParts.Add(SnakeHeadObject);
-
-            SetRandomPosition(AppleObject);
+            GameStatistics.StartGame();
 
             base.Initialize();
         }
@@ -182,69 +225,77 @@ namespace Snake_Game
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // HANDLES SNAKE BODY
-
-            for (int i = 0; i < SnakeParts.Count; i++)
+            switch (GameStatistics.GameState)
             {
-                SnakeParts[i].OldPositions.Add(SnakeParts[i]._Position);
-
-                if (i < 1)
-                    continue;
-
-                if (SnakeParts[i - 1].OldPositions.Count < FrameDelay)
-                    continue;
-
-                if (FindDistance(SnakeHeadObject._Position, SnakeParts[i]._Position) < (int)PixelDistances.DistanceForHeadToCollideWithBody)
-                    Environment.Exit(0);
-
-                SnakeParts[i]._Position = SnakeParts[i - 1].OldPositions[0];
-                SnakeParts[i - 1].OldPositions.RemoveAt(0);
-            }
-
-            SnakeParts[SnakeParts.Count - 1].OldPositions.RemoveAt(0);
-
-            // HANDLES MOVEMENT
-
-            if (SnakeHeadObject.MoveDirection != Direction.Down && Keyboard.GetState().IsKeyDown(Keys.W) || Keyboard.GetState().IsKeyDown(Keys.Up))
-                SnakeHeadObject.MoveDirection = Direction.Up;
-            else if (SnakeHeadObject.MoveDirection != Direction.Right && Keyboard.GetState().IsKeyDown(Keys.A) || Keyboard.GetState().IsKeyDown(Keys.Left))
-                SnakeHeadObject.MoveDirection = Direction.Left;
-            else if (SnakeHeadObject.MoveDirection != Direction.Left && Keyboard.GetState().IsKeyDown(Keys.D) || Keyboard.GetState().IsKeyDown(Keys.Right))
-                SnakeHeadObject.MoveDirection = Direction.Right;
-            else if (SnakeHeadObject.MoveDirection != Direction.Up && Keyboard.GetState().IsKeyDown(Keys.S) || Keyboard.GetState().IsKeyDown(Keys.Down))
-                SnakeHeadObject.MoveDirection = Direction.Down;
-
-            switch (SnakeHeadObject.MoveDirection)
-            {
-                case Direction.Up:
-                    SnakeHeadObject._Position._Y -= Speed;
+                case GameStates.Menu:
                     break;
-                case Direction.Left:
-                    SnakeHeadObject._Position._X -= Speed;
+                case GameStates.Started:
+                    // HANDLES SNAKE BODY
+
+                    for (int i = 0; i < GameStatistics.SnakeParts.Count; i++)
+                    {
+                        GameStatistics.SnakeParts[i].OldPositions.Add(GameStatistics.SnakeParts[i]._Position);
+
+                        if (i < 1)
+                            continue;
+
+                        if (GameStatistics.SnakeParts[i - 1].OldPositions.Count < FrameDelay)
+                            continue;
+
+                        if (FindDistance(GameStatistics.SnakeHeadObject._Position, GameStatistics.SnakeParts[i]._Position) < (int)PixelDistances.DistanceForHeadToCollideWithBody)
+                            GameStatistics.GameOver();
+
+                        GameStatistics.SnakeParts[i]._Position = GameStatistics.SnakeParts[i - 1].OldPositions[0];
+                        GameStatistics.SnakeParts[i - 1].OldPositions.RemoveAt(0);
+                    }
+
+                    GameStatistics.SnakeParts[GameStatistics.SnakeParts.Count - 1].OldPositions.RemoveAt(0);
+
+                    // HANDLES MOVEMENT
+
+                    if (GameStatistics.SnakeHeadObject.MoveDirection != Direction.Down && (Keyboard.GetState().IsKeyDown(Keys.W) || Keyboard.GetState().IsKeyDown(Keys.Up)))
+                        GameStatistics.SnakeHeadObject.MoveDirection = Direction.Up;
+                    else if (GameStatistics.SnakeHeadObject.MoveDirection != Direction.Right && (Keyboard.GetState().IsKeyDown(Keys.A) || Keyboard.GetState().IsKeyDown(Keys.Left)))
+                        GameStatistics.SnakeHeadObject.MoveDirection = Direction.Left;
+                    else if (GameStatistics.SnakeHeadObject.MoveDirection != Direction.Left && (Keyboard.GetState().IsKeyDown(Keys.D) || Keyboard.GetState().IsKeyDown(Keys.Right)))
+                        GameStatistics.SnakeHeadObject.MoveDirection = Direction.Right;
+                    else if (GameStatistics.SnakeHeadObject.MoveDirection != Direction.Up && (Keyboard.GetState().IsKeyDown(Keys.S) || Keyboard.GetState().IsKeyDown(Keys.Down)))
+                        GameStatistics.SnakeHeadObject.MoveDirection = Direction.Down;
+
+                    switch (GameStatistics.SnakeHeadObject.MoveDirection)
+                    {
+                        case Direction.Up:
+                            GameStatistics.SnakeHeadObject._Position._Y -= Speed;
+                            break;
+                        case Direction.Left:
+                            GameStatistics.SnakeHeadObject._Position._X -= Speed;
+                            break;
+                        case Direction.Right:
+                            GameStatistics.SnakeHeadObject._Position._X += Speed;
+                            break;
+                        case Direction.Down:
+                            GameStatistics.SnakeHeadObject._Position._Y += Speed;
+                            break;
+                    }
+
+                    // HANDLES SNAKE GOING OFF MAP
+
+                    if (GameStatistics.SnakeHeadObject._Position._X <= 0 || GameStatistics.SnakeHeadObject._Position._X + GameStatistics.SnakeHeadObject._SizeX >= WindowWidth ||
+                        GameStatistics.SnakeHeadObject._Position._Y <= 0 || GameStatistics.SnakeHeadObject._Position._Y + GameStatistics.SnakeHeadObject._SizeY >= WindowHeight)
+                    { GameStatistics.GameOver(); }
+
+                    // HANDLES COLLECTING APPLE
+
+                    if (FindDistance(GameStatistics.SnakeHeadObject._Position, GameStatistics.AppleObject._Position) < (int)PixelDistances.FromSnakeToAppleForCollection)
+                    {
+                        GameStatistics.IncreaseScore();
+                        GameStatistics.SnakeParts.Add(new SnakeBody(GameStatistics.SnakeParts[GameStatistics.SnakeParts.Count - 1]._Position));
+
+                        SetRandomPosition(GameStatistics.AppleObject);
+                    }
                     break;
-                case Direction.Right:
-                    SnakeHeadObject._Position._X += Speed;
+                case GameStates.Ended:
                     break;
-                case Direction.Down:
-                    SnakeHeadObject._Position._Y += Speed;
-                    break;
-            }
-
-            // HANDLES SNAKE GOING OFF MAP
-
-            if (SnakeHeadObject._Position._X <= 0 || SnakeHeadObject._Position._X + SnakeHeadObject._SizeX >= WindowWidth)
-                Environment.Exit(0);
-            if (SnakeHeadObject._Position._Y <= 0 || SnakeHeadObject._Position._Y + SnakeHeadObject._SizeY >= WindowHeight)
-                Environment.Exit(0);
-
-            // HANDLES COLLECTING APPLE
-
-            if (FindDistance(SnakeHeadObject._Position, AppleObject._Position) < (int)PixelDistances.FromSnakeToAppleForCollection)
-            {
-                PlayerStatistics.IncreaseScore();
-                SnakeParts.Add(new SnakeBody(SnakeParts[SnakeParts.Count - 1]._Position));
-
-                SetRandomPosition(AppleObject);
             }
 
             base.Update(gameTime);
@@ -255,24 +306,40 @@ namespace Snake_Game
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin();
-            
-            foreach (var snake in SnakeParts)
-                _spriteBatch.Draw(_pixel, 
-                new Rectangle(snake._Position._X, snake._Position._Y, snake._SizeX, snake._SizeY), 
-                Color.Green
-                );
 
-            _spriteBatch.Draw(_appleSprite, 
-                new Rectangle(AppleObject._Position._X, AppleObject._Position._Y, AppleObject._SizeX, AppleObject._SizeY), 
-                Color.Red
-             );
+            switch (GameStatistics.GameState)
+            {
+                case GameStates.Menu:
+                    break;
+                case GameStates.Started:
+                    foreach (var snake in GameStatistics.SnakeParts)
+                        _spriteBatch.Draw(_pixel,
+                        new Rectangle(snake._Position._X, snake._Position._Y, snake._SizeX, snake._SizeY),
+                        Color.Green
+                        );
 
-            _spriteBatch.DrawString(
-                _font,
-                $"Score: {PlayerStatistics._Score}",
-                new Vector2(0, 0),
-                Color.Red
-            );
+                    _spriteBatch.Draw(_appleSprite,
+                        new Rectangle(GameStatistics.AppleObject._Position._X, GameStatistics.AppleObject._Position._Y, GameStatistics.AppleObject._SizeX, GameStatistics.AppleObject._SizeY),
+                        Color.Red
+                     );
+
+                    _spriteBatch.DrawString(
+                        _font,
+                        $"Score: {GameStatistics._Score}",
+                        new Vector2(0, 0),
+                        Color.Red
+                    );
+
+                    _spriteBatch.DrawString(
+                        _font,
+                        $"High Score: {GameStatistics.HighScore}",
+                        new Vector2(0, _font.LineSpacing),
+                        Color.Red
+                    );
+                    break;
+                case GameStates.Ended:
+                    break;
+            }
 
             _spriteBatch.End();
 
