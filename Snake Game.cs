@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading.Tasks.Sources;
 
 namespace Snake_Game
@@ -18,9 +19,25 @@ namespace Snake_Game
         private Texture2D _appleSprite;
 
         private const int Speed = 5;
-        private const int AppleSpawnDistanceMinimum = 700;
         private const int WindowWidth = 1280;
         private const int WindowHeight = 720;
+        private const int FrameDelay = 22;
+        private const int LoopThroughAvailablePositions = 100;
+
+        public enum PixelDistances
+        {
+            MinimumForAppleToSpawn = 700,
+            FromSnakeToAppleForCollection = 100,
+            DistanceForHeadToCollideWithBody = 100
+        }
+
+        public enum Sizes
+        {
+            SnakePartSizeX = 100,
+            SnakePartSizeY = 100,
+            AppleSizeX = 50,
+            AppleSizeY = 50
+        }
 
         public enum Direction
         {
@@ -59,6 +76,19 @@ namespace Snake_Game
             return new Coordinate(point1, point2);
         }
 
+        public static void SetRandomPosition(GameObject Object)
+        {
+            for (int i = 0; i < LoopThroughAvailablePositions; i++)
+            {
+                Coordinate newPosition = RandomPosition(Object._SizeX, Object._SizeY);
+                if (FindDistance(newPosition, CentrePoint) < (int)PixelDistances.MinimumForAppleToSpawn && i < LoopThroughAvailablePositions - 1) 
+                    continue;
+
+                Object._Position = RandomPosition(Object._SizeX, Object._SizeY);
+                return;
+            }
+        }
+
         public static Coordinate CentrePoint = new Coordinate(WindowWidth / 2, WindowHeight / 2);
 
         // player stats
@@ -83,8 +113,8 @@ namespace Snake_Game
         public class GameObject
         {
             public Coordinate _Position = CentrePoint;
-            public int _SizeX = 100;
-            public int _SizeY = 100;
+            public int _SizeX = (int)Sizes.SnakePartSizeX;
+            public int _SizeY = (int)Sizes.SnakePartSizeY;
 
             public List<Coordinate> OldPositions = new List<Coordinate>();
         }
@@ -112,7 +142,7 @@ namespace Snake_Game
         }
 
         private SnakeHead SnakeHeadObject = new SnakeHead();
-        private Apple AppleObject = new Apple(50, 50);
+        private Apple AppleObject = new Apple((int)Sizes.AppleSizeX, (int)Sizes.AppleSizeY);
         private List<GameObject> SnakeParts = new List<GameObject>();
 
         // game logic
@@ -132,16 +162,8 @@ namespace Snake_Game
             _graphics.ApplyChanges();
 
             SnakeParts.Add(SnakeHeadObject);
-            // set random apple position
-            while (true)
-            {
-                Coordinate newPosition = RandomPosition(AppleObject._SizeX, AppleObject._SizeY);
-                if (FindDistance(newPosition, CentrePoint) < AppleSpawnDistanceMinimum)
-                    continue;
 
-                AppleObject._Position = RandomPosition(AppleObject._SizeX, AppleObject._SizeY);
-                break;
-            }
+            SetRandomPosition(AppleObject);
 
             base.Initialize();
         }
@@ -169,10 +191,10 @@ namespace Snake_Game
                 if (i < 1)
                     continue;
 
-                if (SnakeParts[i - 1].OldPositions.Count < 22)
+                if (SnakeParts[i - 1].OldPositions.Count < FrameDelay)
                     continue;
 
-                if (FindDistance(SnakeHeadObject._Position, SnakeParts[i]._Position) < 70)
+                if (FindDistance(SnakeHeadObject._Position, SnakeParts[i]._Position) < (int)PixelDistances.DistanceForHeadToCollideWithBody)
                     Environment.Exit(0);
 
                 SnakeParts[i]._Position = SnakeParts[i - 1].OldPositions[0];
@@ -183,13 +205,13 @@ namespace Snake_Game
 
             // HANDLES MOVEMENT
 
-            if (Keyboard.GetState().IsKeyDown(Keys.W) || Keyboard.GetState().IsKeyDown(Keys.Up))
+            if (SnakeHeadObject.MoveDirection != Direction.Down && Keyboard.GetState().IsKeyDown(Keys.W) || Keyboard.GetState().IsKeyDown(Keys.Up))
                 SnakeHeadObject.MoveDirection = Direction.Up;
-            else if (Keyboard.GetState().IsKeyDown(Keys.A) || Keyboard.GetState().IsKeyDown(Keys.Left))
+            else if (SnakeHeadObject.MoveDirection != Direction.Right && Keyboard.GetState().IsKeyDown(Keys.A) || Keyboard.GetState().IsKeyDown(Keys.Left))
                 SnakeHeadObject.MoveDirection = Direction.Left;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D) || Keyboard.GetState().IsKeyDown(Keys.Right))
+            else if (SnakeHeadObject.MoveDirection != Direction.Left && Keyboard.GetState().IsKeyDown(Keys.D) || Keyboard.GetState().IsKeyDown(Keys.Right))
                 SnakeHeadObject.MoveDirection = Direction.Right;
-            else if (Keyboard.GetState().IsKeyDown(Keys.S) || Keyboard.GetState().IsKeyDown(Keys.Down))
+            else if (SnakeHeadObject.MoveDirection != Direction.Up && Keyboard.GetState().IsKeyDown(Keys.S) || Keyboard.GetState().IsKeyDown(Keys.Down))
                 SnakeHeadObject.MoveDirection = Direction.Down;
 
             switch (SnakeHeadObject.MoveDirection)
@@ -217,20 +239,12 @@ namespace Snake_Game
 
             // HANDLES COLLECTING APPLE
 
-            if (FindDistance(SnakeHeadObject._Position, AppleObject._Position) < 100)
+            if (FindDistance(SnakeHeadObject._Position, AppleObject._Position) < (int)PixelDistances.FromSnakeToAppleForCollection)
             {
                 PlayerStatistics.IncreaseScore();
                 SnakeParts.Add(new SnakeBody(SnakeParts[SnakeParts.Count - 1]._Position));
 
-                while (true)
-                {
-                    Coordinate newPosition = RandomPosition(AppleObject._SizeX, AppleObject._SizeY);
-                    if (FindDistance(SnakeHeadObject._Position, newPosition) < AppleSpawnDistanceMinimum)
-                        continue;
-
-                    AppleObject._Position = newPosition;
-                    break;
-                }
+                SetRandomPosition(AppleObject);
             }
 
             base.Update(gameTime);
