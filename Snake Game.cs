@@ -235,11 +235,8 @@ namespace Snake_Game
 
             if (new Rectangle(CentrePoint._X, CentrePoint._Y, 100, 100).Contains(_currentMouseState.Position))
             {
-                if (_currentMouseState.LeftButton == ButtonState.Pressed &&
-                    _previousMouseState.LeftButton == ButtonState.Released)
-                {
+                if (_currentMouseState.LeftButton == ButtonState.Pressed && _previousMouseState.LeftButton == ButtonState.Released)
                     GameStatistics.StartGame();
-                }
             }
         }
 
@@ -248,7 +245,7 @@ namespace Snake_Game
             _spriteBatch.Draw(_testingBox,
                 new Rectangle(CentrePoint._X, CentrePoint._Y, 100, 100),
                  Color.Red
-             );
+            );
         }
 
         private void UpdateGameStarted()
@@ -303,8 +300,8 @@ namespace Snake_Game
 
             // HANDLES SNAKE GOING OFF MAP
 
-            if (GameStatistics.SnakeHeadObject._Position._X <= 0 || GameStatistics.SnakeHeadObject._Position._X + GameStatistics.SnakeHeadObject._SizeX >= WindowWidth ||
-                GameStatistics.SnakeHeadObject._Position._Y <= 0 || GameStatistics.SnakeHeadObject._Position._Y + GameStatistics.SnakeHeadObject._SizeY >= WindowHeight)
+            if (GameStatistics.SnakeHeadObject._Position._X <= 0 || GameStatistics.SnakeHeadObject._Position._X + GameStatistics.SnakeHeadObject._SizeX >= WindowWidth
+                || GameStatistics.SnakeHeadObject._Position._Y <= 0 || GameStatistics.SnakeHeadObject._Position._Y + GameStatistics.SnakeHeadObject._SizeY >= WindowHeight)
             { _ = GameStatistics.GameOver(); }
 
             // HANDLES COLLECTING APPLE
@@ -322,14 +319,14 @@ namespace Snake_Game
         {
             foreach (var snake in GameStatistics.SnakeParts)
                 _spriteBatch.Draw(_pixel,
-                new Rectangle(snake._Position._X, snake._Position._Y, snake._SizeX, snake._SizeY),
-                Color.Green
+                    new Rectangle(snake._Position._X, snake._Position._Y, snake._SizeX, snake._SizeY),
+                    Color.Green
                 );
 
             _spriteBatch.Draw(_appleSprite,
                 new Rectangle(GameStatistics.AppleObject._Position._X, GameStatistics.AppleObject._Position._Y, GameStatistics.AppleObject._SizeX, GameStatistics.AppleObject._SizeY),
                 Color.Red
-             );
+            );
 
             _spriteBatch.DrawString(
                 _font,
