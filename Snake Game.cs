@@ -24,7 +24,7 @@ namespace Snake_Game
         private const int WindowWidth = 1280;
         private const int WindowHeight = 720;
         private const int FrameDelay = 22;
-        private const int LoopThroughAvailablePositions = 100;
+        private const int LoopThroughAvailablePositions = 1000;
         private const int GameOverScreenDuration = 5;
 
         private MouseState _currentMouseState;
@@ -99,7 +99,7 @@ namespace Snake_Game
                     continue;
                 }
 
-                Object._Position = RandomPosition(Object._SizeX, Object._SizeY);
+                Object._Position = newPosition;
                 return;
             }
         }
@@ -173,6 +173,8 @@ namespace Snake_Game
 
             public void StartGame()
             {
+                ResetScore();
+
                 SnakeHeadObject = new SnakeHead();
                 AppleObject = new Apple((int)Sizes.AppleSizeX, (int)Sizes.AppleSizeY);
                 SnakeParts.Add(GameStatistics.SnakeHeadObject);
@@ -185,7 +187,6 @@ namespace Snake_Game
                 GameState = GameStates.Ended;
 
                 HighScore = (HighScore < _Score) ? _Score : HighScore;
-                ResetScore();
 
                 await Task.Delay(5);
 
@@ -352,14 +353,20 @@ namespace Snake_Game
             );
         }
 
-        private void UpdateGameOver()
-        {
-
-        }
-
         private void DrawGameOver()
         {
-
+            string deathText = "You died!";
+            _spriteBatch.DrawString(
+                _font,
+                $"You died!\nScore: {GameStatistics._Score}",
+                new Vector2(CentrePoint._X, CentrePoint._Y),
+                Color.Red,
+                0,
+                _font.MeasureString(deathText) / 2,
+                2,
+                SpriteEffects.None,
+                0
+            );
         }
         protected override void Update(GameTime gameTime)
         {
@@ -373,9 +380,6 @@ namespace Snake_Game
                     break; 
                 case GameStates.Started:
                     UpdateGameStarted();
-                    break;
-                case GameStates.Ended:
-                    UpdateGameOver();
                     break;
             }
 
