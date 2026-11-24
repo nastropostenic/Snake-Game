@@ -104,13 +104,20 @@ namespace Snake_Game
             }
         }
 
+        public static Coordinate ChangeAnchorPointToCentre(Coordinate position, int sizeX, int sizeY)
+        {
+            position._X -= sizeX / 2;
+            position._Y -= sizeY / 2;
+            return position;
+        }
+
         public static Coordinate CentrePoint = new Coordinate(WindowWidth / 2, WindowHeight / 2);
 
         // objects
 
         public class GameObject
         {
-            public Coordinate _Position = CentrePoint;
+            public Coordinate _Position = ChangeAnchorPointToCentre(CentrePoint, (int)Sizes.SnakePartSizeX, (int)Sizes.SnakePartSizeY);
             public int _SizeX = (int)Sizes.SnakePartSizeX;
             public int _SizeY = (int)Sizes.SnakePartSizeY;
 
@@ -228,12 +235,14 @@ namespace Snake_Game
             _pixel.SetData(new[] { Color.White });
         }
 
+
+
         private void UpdateGameMenu()
         {
             _previousMouseState = _currentMouseState;
             _currentMouseState = Mouse.GetState();
 
-            if (new Rectangle(CentrePoint._X, CentrePoint._Y, 100, 100).Contains(_currentMouseState.Position))
+            if (new Rectangle(ChangeAnchorPointToCentre(CentrePoint, 100, 100)._X, ChangeAnchorPointToCentre(CentrePoint, 100, 100)._Y, 100, 100).Contains(_currentMouseState.Position))
             {
                 if (_currentMouseState.LeftButton == ButtonState.Pressed && _previousMouseState.LeftButton == ButtonState.Released)
                     GameStatistics.StartGame();
@@ -243,7 +252,7 @@ namespace Snake_Game
         private void DrawGameMenu()
         {
             _spriteBatch.Draw(_testingBox,
-                new Rectangle(CentrePoint._X, CentrePoint._Y, 100, 100),
+                new Rectangle(ChangeAnchorPointToCentre(CentrePoint, 100, 100)._X, ChangeAnchorPointToCentre(CentrePoint, 100, 100)._Y, 100, 100),
                  Color.Red
             );
         }
