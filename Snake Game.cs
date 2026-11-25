@@ -146,6 +146,17 @@ namespace Snake_Game
             }
         }
 
+        public class MenuObject : GameObject
+        {
+            public Rectangle _ObjectDimensions => new Rectangle(ChangeAnchorPointToCentre(_Position, _SizeX, _SizeY)._X, ChangeAnchorPointToCentre(_Position, _SizeX, _SizeY)._Y, _SizeX, _SizeY);
+            public MenuObject(Coordinate position, int sizeX, int sizeY)
+            {
+                _Position = position;
+                _SizeX = sizeX;
+                _SizeY = sizeY;
+            }
+        }
+
         // player stats
         public class GameStatisticsTemplate
         {
@@ -236,14 +247,14 @@ namespace Snake_Game
             _pixel.SetData(new[] { Color.White });
         }
 
-
-
+        private MenuObject StartObject = new MenuObject(new Coordinate(CentrePoint._X, CentrePoint._Y - WindowHeight / 10), 250, 100);
+        
         private void UpdateGameMenu()
         {
             _previousMouseState = _currentMouseState;
             _currentMouseState = Mouse.GetState();
 
-            if (new Rectangle(ChangeAnchorPointToCentre(CentrePoint, 100, 100)._X, ChangeAnchorPointToCentre(CentrePoint, 100, 100)._Y, 100, 100).Contains(_currentMouseState.Position))
+            if (StartObject._ObjectDimensions.Contains(_currentMouseState.Position))
             {
                 if (_currentMouseState.LeftButton == ButtonState.Pressed && _previousMouseState.LeftButton == ButtonState.Released)
                     GameStatistics.StartGame();
@@ -253,8 +264,8 @@ namespace Snake_Game
         private void DrawGameMenu()
         {
             _spriteBatch.Draw(_testingBox,
-                new Rectangle(ChangeAnchorPointToCentre(CentrePoint, 100, 100)._X, ChangeAnchorPointToCentre(CentrePoint, 100, 100)._Y, 100, 100),
-                 Color.Red
+                StartObject._ObjectDimensions,
+                Color.Red
             );
         }
 
